@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------------------
+# Default experiment configuration.
+# Override any field on the CLI:  python -m src.engine.train --patch-size 32
+# ---------------------------------------------------------------------------
+seed: 42
+
+data:
+  manifest: data/processed/manifest.csv   # produced by src/data/extract_patches.py
+  patch_dir: data/processed/patches       # *.npy files, each (D, H, W) in Hounsfield units
+  raw_patch_size: 64                       # size patches were saved at
+  patch_size: 48                           # size fed to the network (random/center crop)
+  hu_clip: [-1000.0, 400.0]                # window: air .. soft tissue / bone edge
+  val_fraction: 0.15
+  test_fraction: 0.15
+  split_by: patient_id                     # never leak a patient across splits
+  exclude_ambiguous: true                  # drop nodules with median malignancy == 3
+
+train:
+  batch_size: 32
+  epochs: 60
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  optimizer: adamw
+  scheduler: cosine
+  warmup_epochs: 3
+  amp: true                                # mixed precision (needs CUDA)
+  num_workers: 4
+  balance_classes: true                    # weighted sampler for benign/malignant
+  early_stop_patience: 12                  # epochs without val AUC improvement
+  monitor: val_auc
+
+model:
+  name: resnet3d
+  depth: 10                                # 10 | 18
+  widths: [16, 32, 64, 128]
+  dropout: 0.2
+
+augment:
+  flip: true
+  rot90: true                              # in-plane 90-degree rotations
+  intensity_shift: 0.1                     # +/- fraction of range
+  scale: [0.9, 1.1]
+
+output:
+  dir: artifacts
+  run_name: resnet3d_lidc

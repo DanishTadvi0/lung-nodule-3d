@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lung-nodule-3d"
+version = "0.1.0"
+description = "3D CNN reimplementation of a 2023 lung-cancer CT methodology on LIDC-IDRI"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

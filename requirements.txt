@@ -1,0 +1,21 @@
+# Core DL
+torch>=2.2
+torchvision>=0.17
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+scikit-learn>=1.3
+scikit-image>=0.21
+PyYAML>=6.0
+tqdm>=4.65
+matplotlib>=3.7
+
+# Medical imaging / data prep
+pylidc>=0.2.3            # radiologist annotations for LIDC-IDRI
+pydicom>=2.4
+SimpleITK>=2.3           # reads .mhd/.raw (LUNA16) and DICOM series
+nibabel>=5.1
+
+# Optional but recommended
+monai>=1.3              # 3D transforms, networks, sliding-window inference
+tensorboard>=2.14

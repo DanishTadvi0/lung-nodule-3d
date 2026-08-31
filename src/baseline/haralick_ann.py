@@ -86,6 +86,15 @@ def main(argv=None):
     prob = clf.predict_proba(scaler.transform(Xte))[:, 1]
     m = binary_metrics(yte, prob)
     print("[baseline: Haralick + ANN]", format_metrics(m))
+
+    import json
+    from pathlib import Path
+    out = Path(cfg["output"]["dir"]) / cfg["output"]["run_name"]
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "baseline_metrics.json", "w") as f:
+        json.dump({k: (float(v) if isinstance(v, (int, float, np.floating)) else v)
+                   for k, v in m.items()}, f, indent=2)
+    print(f"[baseline] saved {out/'baseline_metrics.json'}")
     return m
 
 

@@ -122,7 +122,7 @@ def main(argv=None):
     rows, oof_true, oof_prob = [], [], []
     for k, (tr_idx, te_idx) in enumerate(gkf.split(manifest, y, groups), 1):
         test_pat = set(groups[te_idx])
-        train_pat = list(set(groups[tr_idx]))
+        train_pat = sorted(set(groups[tr_idx]))   # sorted -> reproducible across runs
         rng = np.random.default_rng(seed + k)
         rng.shuffle(train_pat)
         n_val = max(1, int(round(len(train_pat) * 0.15)))

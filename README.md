@@ -219,11 +219,11 @@ out exactly once, no patient spans folds.
 |---|---|---|---|---|---|
 | Tadvi et al. 2023 (paper, private data, single split) | – | 0.887 | 0.971 | 0.920 | – |
 | Haralick + ANN — 2023 method, reimplemented on LIDC | 0.711 | 0.581 | 0.744 | 0.677 | 0.597 |
-| **3D CNN (ResNet-10, ~0.9 M params)** | **0.886** | **0.767** | **0.860** | **0.815** | **0.771** |
+| **3D CNN (ResNet-10, ~0.9 M params)** | **0.905** | **0.753** | **0.891** | **0.835** | **0.785** |
 
-Fold-wise AUC: 3D CNN **0.901 ± 0.040** vs Haralick+ANN **0.725 ± 0.035**. Every CNN fold
-scored between 0.84 and 0.95. The learned volumetric model beats hand-crafted 2D texture
-features by **~0.18 AUC** on the same patients with the same protocol.
+Fold-wise AUC: 3D CNN **0.912 ± 0.035** vs Haralick+ANN **0.725 ± 0.035**. Every CNN fold
+scored between 0.87 and 0.96. The learned volumetric model beats hand-crafted 2D texture
+features by **~0.19 AUC** on the same patients with the same protocol.
 
 Figures (`scripts/plot_cv.py` → `artifacts/resnet3d_lidc_cv/`):
 `roc_cv.png` (pooled OOF ROC, both methods), `confusion_matrix_cv.png`, `fold_auc.png`.
@@ -241,7 +241,7 @@ biopsy-confirmed.
 replaced the hand-crafted Haralick/ANN pipeline with an end-to-end 3D CNN on the public
 LIDC-IDRI dataset; added 5-fold patient-grouped cross-validation and Grad-CAM explainability;
 reproduced the original method as a baseline (pooled AUC 0.71) and improved pooled AUC to
-0.89 with the 3D CNN."*
+0.905 with the 3D CNN."*
 
 What it demonstrably shows a recruiter / admissions committee:
 - **You ship, then you iterate.** A 2023 publication *and* a 2025 modern re-build is a rare

@@ -37,15 +37,16 @@ def _loaders(cfg, seed):
     ds = {s: NodulePatchDataset(manifest, cfg, s, seed=seed) for s in ("train", "val", "test")}
     bs = cfg["train"]["batch_size"]
     nw = cfg["train"]["num_workers"]
+    pin = torch.cuda.is_available()
 
     if cfg["train"].get("balance_classes", True):
         w = ds["train"].sample_weights()
         sampler = WeightedRandomSampler(w, num_samples=len(w), replacement=True)
         train_loader = DataLoader(ds["train"], batch_size=bs, sampler=sampler,
-                                  num_workers=nw, pin_memory=True, drop_last=True)
+                                  num_workers=nw, pin_memory=pin, drop_last=True)
     else:
         train_loader = DataLoader(ds["train"], batch_size=bs, shuffle=True,
-                                  num_workers=nw, pin_memory=True, drop_last=True)
+                                  num_workers=nw, pin_memory=pin, drop_last=True)
 
     val_loader = DataLoader(ds["val"], batch_size=bs, shuffle=False, num_workers=nw)
     test_loader = DataLoader(ds["test"], batch_size=bs, shuffle=False, num_workers=nw)
@@ -111,7 +112,7 @@ def main(argv=None):
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda)
 
     use_amp = bool(cfg["train"].get("amp", True)) and device.type == "cuda"
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
     best_metric = -np.inf
     patience = cfg["train"].get("early_stop_patience", 999)
@@ -128,7 +129,7 @@ def main(argv=None):
         for x, y in train_loader:
             x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
             opt.zero_grad(set_to_none=True)
-            with torch.cuda.amp.autocast(enabled=use_amp):
+            with torch.amp.autocast("cuda", enabled=use_amp):
                 loss = criterion(model(x), y)
             scaler.scale(loss).backward()
             scaler.step(opt)

@@ -41,11 +41,25 @@ def _label_from_median(med: float) -> int:
 
 
 def _import_pylidc():
-    """pylidc 0.2.x uses configparser.SafeConfigParser, removed in Python 3.12+.
-    Patch it back before importing pylidc (Colab now runs Python 3.13)."""
+    """pylidc 0.2.3 (2020) predates Python 3.12 and NumPy 2.x. Restore the
+    APIs it still relies on before importing it (Colab now runs Python 3.13
+    + NumPy 2.x)."""
     import configparser
     if not hasattr(configparser, "SafeConfigParser"):
         configparser.SafeConfigParser = configparser.ConfigParser
+
+    import numpy as np
+    for name, target in {"int": int, "float": float, "bool": bool,
+                         "object": object, "str": str, "complex": complex,
+                         "long": int, "unicode": str}.items():
+        if not hasattr(np, name):
+            setattr(np, name, target)
+    for old, new in (("float_", "float64"), ("complex_", "complex128"),
+                     ("unicode_", "str_"), ("bool8", "bool_"),
+                     ("NaN", "nan"), ("Inf", "inf"), ("infty", "inf")):
+        if not hasattr(np, old) and hasattr(np, new):
+            setattr(np, old, getattr(np, new))
+
     import pylidc as pl
     from pylidc.utils import consensus
     return pl, consensus

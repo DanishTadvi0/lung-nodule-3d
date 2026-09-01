@@ -33,17 +33,18 @@ def main():
 
     print("[tcia] listing LIDC-IDRI series ...")
     series = nbia.getSeries(collection="LIDC-IDRI")            # list of dicts
-    # one CT series per patient in LIDC-IDRI; keep deterministic order
+    # keep only the CT series (LIDC also has a few DX/CR); one CT scan per patient
+    series = [s for s in series if s.get("Modality") == "CT"]
     series = sorted(series, key=lambda s: s["PatientID"])
     subset = series[args.start:args.start + args.n_patients]
     uids = [s["SeriesInstanceUID"] for s in subset]
-    print(f"[tcia] downloading {len(uids)} series -> {out}")
+    print(f"[tcia] {len(series)} CT series total; downloading {len(uids)} -> {out}")
 
     nbia.downloadSeries(
         uids,
         input_type="list",
         path=str(out),
-        format="dict",
+        format="df",
     )
     print("[done] now set your pylidc config to point at:", out.resolve())
     print("       then: python -m src.data.extract_patches --out data/processed --limit", args.n_patients)

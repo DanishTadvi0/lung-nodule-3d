@@ -20,8 +20,9 @@ from skimage.transform import resize
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
+from sklearn.model_selection import GroupKFold
+
 from ..config import load_config
-from ..data.dataset import make_splits
 from ..data.transforms import hu_window
 from ..utils.metrics import binary_metrics, format_metrics
 from ..utils.seed import seed_everything
@@ -65,37 +66,54 @@ def _build_xy(df, cfg):
 
 
 def main(argv=None):
-    cfg = load_config(argv)
+    import argparse
+    import json
+    from pathlib import Path
+
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--folds", type=int, default=5)
+    args, rest = pre.parse_known_args(argv)
+    cfg = load_config(rest)
     seed = int(cfg["seed"])
     seed_everything(seed)
 
-    manifest = make_splits(pd.read_csv(cfg["data"]["manifest"]), cfg, seed)
-    tr = manifest[manifest["split"].isin(["train", "val"])]
-    te = manifest[manifest["split"] == "test"]
+    manifest = pd.read_csv(cfg["data"]["manifest"])
+    manifest = manifest[manifest["label"].isin([0, 1])].reset_index(drop=True)
 
     print("[baseline] extracting Haralick features ...")
-    Xtr, ytr = _build_xy(tr, cfg)
-    Xte, yte = _build_xy(te, cfg)
-    print(f"[baseline] feature dim = {Xtr.shape[1]}  train={len(ytr)}  test={len(yte)}")
+    X, y = _build_xy(manifest, cfg)
+    groups = manifest["patient_id"].to_numpy()
+    print(f"[baseline] feature dim = {X.shape[1]}  nodules={len(y)}  "
+          f"patients={len(set(groups))}  folds={args.folds}")
 
-    scaler = StandardScaler().fit(Xtr)
-    clf = MLPClassifier(hidden_layer_sizes=(20,), activation="logistic",
-                        solver="lbfgs", max_iter=800, random_state=seed)
-    clf.fit(scaler.transform(Xtr), ytr)
+    gkf = GroupKFold(n_splits=args.folds)
+    oof_true, oof_prob, fold_aucs = [], [], []
+    for k, (tr_i, te_i) in enumerate(gkf.split(X, y, groups), 1):
+        scaler = StandardScaler().fit(X[tr_i])
+        clf = MLPClassifier(hidden_layer_sizes=(20,), activation="logistic",
+                            solver="lbfgs", max_iter=800, random_state=seed)
+        clf.fit(scaler.transform(X[tr_i]), y[tr_i])
+        prob = clf.predict_proba(scaler.transform(X[te_i]))[:, 1]
+        m = binary_metrics(y[te_i], prob)
+        fold_aucs.append(m["auc"])
+        oof_true.append(y[te_i])
+        oof_prob.append(prob)
+        print(f"[fold {k}/{args.folds}] {format_metrics(m)}")
 
-    prob = clf.predict_proba(scaler.transform(Xte))[:, 1]
-    m = binary_metrics(yte, prob)
-    print("[baseline: Haralick + ANN]", format_metrics(m))
+    oof_true = np.concatenate(oof_true)
+    oof_prob = np.concatenate(oof_prob)
+    pooled = binary_metrics(oof_true, oof_prob)
+    print(f"\n[baseline: Haralick + ANN] pooled {format_metrics(pooled)}")
+    print(f"[baseline] fold AUC {np.nanmean(fold_aucs):.3f} +/- {np.nanstd(fold_aucs):.3f}")
 
-    import json
-    from pathlib import Path
-    out = Path(cfg["output"]["dir"]) / cfg["output"]["run_name"]
+    out = Path(cfg["output"]["dir"]) / f"{cfg['output']['run_name']}_cv"
     out.mkdir(parents=True, exist_ok=True)
+    np.savez(out / "baseline_oof.npz", y_true=oof_true, y_prob=oof_prob)
     with open(out / "baseline_metrics.json", "w") as f:
         json.dump({k: (float(v) if isinstance(v, (int, float, np.floating)) else v)
-                   for k, v in m.items()}, f, indent=2)
+                   for k, v in pooled.items()}, f, indent=2)
     print(f"[baseline] saved {out/'baseline_metrics.json'}")
-    return m
+    return pooled
 
 
 if __name__ == "__main__":

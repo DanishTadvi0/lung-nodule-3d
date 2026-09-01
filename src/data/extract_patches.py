@@ -40,9 +40,19 @@ def _label_from_median(med: float) -> int:
     return -1
 
 
-def extract(out_dir: Path, patch_mm: float, patch_vox: int, limit: int | None):
+def _import_pylidc():
+    """pylidc 0.2.x uses configparser.SafeConfigParser, removed in Python 3.12+.
+    Patch it back before importing pylidc (Colab now runs Python 3.13)."""
+    import configparser
+    if not hasattr(configparser, "SafeConfigParser"):
+        configparser.SafeConfigParser = configparser.ConfigParser
     import pylidc as pl
     from pylidc.utils import consensus
+    return pl, consensus
+
+
+def extract(out_dir: Path, patch_mm: float, patch_vox: int, limit: int | None):
+    pl, consensus = _import_pylidc()
 
     patch_dir = out_dir / "patches"
     patch_dir.mkdir(parents=True, exist_ok=True)

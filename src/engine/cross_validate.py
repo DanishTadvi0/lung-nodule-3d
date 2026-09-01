@@ -95,7 +95,7 @@ def train_fold(manifest, cfg, seed, device):
     if best_state is not None:
         model.load_state_dict(best_state)
     tm, y_true, y_prob = evaluate(model, tel, device, crit)
-    return tm, y_true, y_prob, {k: len(v) for k, v in ds.items()}
+    return tm, y_true, y_prob, {k: len(v) for k, v in ds.items()}, model.state_dict()
 
 
 def main(argv=None):
@@ -129,12 +129,14 @@ def main(argv=None):
         val_pat, fit_pat = set(train_pat[:n_val]), set(train_pat[n_val:])
         fold_df = _fold_frame(manifest, fit_pat, val_pat, test_pat)
 
-        tm, yt, yp, sizes = train_fold(fold_df, cfg, seed + k, device)
+        tm, yt, yp, sizes, state = train_fold(fold_df, cfg, seed + k, device)
         print(f"[fold {k}/{args.folds}] sizes={sizes}  {format_metrics(tm)}")
         rows.append({"fold": k, **{kk: tm[kk] for kk in
                      ("accuracy", "sensitivity", "specificity", "precision", "f1", "auc")}})
         oof_true.append(yt)
         oof_prob.append(yp)
+        torch.save({"model": state, "cfg": cfg, "fold": k},
+                   out / f"fold{k}.pt")
 
     with open(out / "fold_metrics.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))

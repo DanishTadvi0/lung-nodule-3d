@@ -208,28 +208,40 @@ The 125 GB is only the raw DICOM, and only if you choose Path B.
 
 ---
 
-## 7. What to report (fills your results section)
+## 7. Results
 
-Produce this table (numbers are illustrative targets, not promises):
+**Data:** 189 LIDC-IDRI patients, **405 nodules** (238 benign / 167 malignant) after
+dropping the 198 with median radiologist malignancy exactly 3. Evaluation is **5-fold
+patient-grouped cross-validation** (`GroupKFold` on `patient_id`) — every nodule is held
+out exactly once, no patient spans folds.
 
-| Method | Features | Params | Test AUC | Sens | Spec | Acc |
-|---|---|---|---|---|---|---|
-| Tadvi et al. 2023 (paper) | Haralick 252-D + ANN | ~5k | – | 0.887 | 0.971 | 0.92 |
-| Baseline here (re-impl) | Haralick + MLP, LIDC split | ~5k | ~0.80–0.86 | … | … | … |
-| **3D ResNet-18 (this repo)** | learned volumetric | ~3M | **~0.90–0.94** | … | … | … |
+| Method (5-fold patient-grouped CV) | Pooled AUC | Sens | Spec | Acc | F1 |
+|---|---|---|---|---|---|
+| Tadvi et al. 2023 (paper, private data, single split) | – | 0.887 | 0.971 | 0.920 | – |
+| Haralick + ANN — 2023 method, reimplemented on LIDC | 0.711 | 0.581 | 0.744 | 0.677 | 0.597 |
+| **3D CNN (ResNet-10, ~0.9 M params)** | **0.886** | **0.767** | **0.860** | **0.815** | **0.771** |
 
-Plus: ROC curve, confusion matrix, 3–4 Grad-CAM overlays (`src/utils/gradcam.py`),
-a training-curve plot from `history.csv`, and an ablation (2D slice vs 3D, with/without
-augmentation). That is a complete conference-workshop-grade experimental section.
+Fold-wise AUC: 3D CNN **0.901 ± 0.040** vs Haralick+ANN **0.725 ± 0.035**. Every CNN fold
+scored between 0.84 and 0.95. The learned volumetric model beats hand-crafted 2D texture
+features by **~0.18 AUC** on the same patients with the same protocol.
+
+Figures (`scripts/plot_cv.py` → `artifacts/resnet3d_lidc_cv/`):
+`roc_cv.png` (pooled OOF ROC, both methods), `confusion_matrix_cv.png`, `fold_auc.png`.
+Grad-CAM overlays: `src/utils/gradcam.py --run artifacts/resnet3d_lidc_cv --checkpoint fold1.pt`.
+
+**Caveats (state these):** 189/1018 patients used (compute-bounded, not method-bounded);
+single architecture, no ensembling; malignancy label is the radiologist consensus, not
+biopsy-confirmed.
 
 ---
 
 ## 8. How this affects your CV
 
 **Framing:** *"Re-implemented and modernised my IJNRD-published lung-cancer CT methodology:
-replaced hand-crafted Haralick/ANN pipeline with an end-to-end 3D CNN on the public
-LIDC-IDRI dataset; added patient-level evaluation, AUC/calibration reporting, and Grad-CAM
-explainability; reproduced the original as a baseline and improved test AUC from ~0.83 to ~0.92."*
+replaced the hand-crafted Haralick/ANN pipeline with an end-to-end 3D CNN on the public
+LIDC-IDRI dataset; added 5-fold patient-grouped cross-validation and Grad-CAM explainability;
+reproduced the original method as a baseline (pooled AUC 0.71) and improved pooled AUC to
+0.89 with the 3D CNN."*
 
 What it demonstrably shows a recruiter / admissions committee:
 - **You ship, then you iterate.** A 2023 publication *and* a 2025 modern re-build is a rare

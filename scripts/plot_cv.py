@@ -12,10 +12,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from src.utils.metrics import binary_metrics  # noqa: E402
 
 
 def main():
@@ -80,10 +84,8 @@ def main():
     print("|---|---|---|---|---|---|")
     print("| Tadvi et al. 2023 (paper, private data, single split) | - | 0.887 | 0.971 | 0.920 | - |")
     if base is not None:
-        from src.utils.metrics import binary_metrics
         print(line("Haralick + ANN (2023 method, reimplemented)",
                    binary_metrics(base["y_true"], base["y_prob"])))
-    from src.utils.metrics import binary_metrics
     print(line("**3D CNN (ResNet-10)**", binary_metrics(yt, yp)))
     if summary:
         a = summary.get("auc", {})

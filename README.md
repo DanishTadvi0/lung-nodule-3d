@@ -225,9 +225,17 @@ Fold-wise AUC: 3D CNN **0.912 ± 0.035** vs Haralick+ANN **0.725 ± 0.035**. Eve
 scored between 0.87 and 0.96. The learned volumetric model beats hand-crafted 2D texture
 features by **~0.19 AUC** on the same patients with the same protocol.
 
-Figures (`scripts/plot_cv.py` → `artifacts/resnet3d_lidc_cv/`):
-`roc_cv.png` (pooled OOF ROC, both methods), `confusion_matrix_cv.png`, `fold_auc.png`.
-Grad-CAM overlays: `src/utils/gradcam.py --run artifacts/resnet3d_lidc_cv --checkpoint fold1.pt`.
+| Pooled out-of-fold ROC | Confusion matrix (thr 0.5) | Per-fold AUC |
+|---|---|---|
+| ![ROC](artifacts/resnet3d_lidc_cv/roc_cv.png) | ![confusion](artifacts/resnet3d_lidc_cv/confusion_matrix_cv.png) | ![folds](artifacts/resnet3d_lidc_cv/fold_auc.png) |
+
+**Grad-CAM** — the 3D CNN localises the nodule and its margin; malignant cases score
+0.99+, benign 0.1–0.15:
+
+![Grad-CAM](artifacts/resnet3d_lidc_cv/gradcam.png)
+
+Regenerate: `python scripts/plot_cv.py --cv-dir artifacts/resnet3d_lidc_cv` and
+`python -m src.utils.gradcam --run artifacts/resnet3d_lidc_cv --checkpoint fold1.pt --patch-id <id>`.
 
 **Caveats (state these):** 189/1018 patients used (compute-bounded, not method-bounded);
 single architecture, no ensembling; malignancy label is the radiologist consensus, not

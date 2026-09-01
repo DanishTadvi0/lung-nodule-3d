@@ -16,3 +16,5 @@ artifacts/**/*.ckpt
 runs/
 .ipynb_checkpoints/
 .DS_Store
+.idea/
+.vscode/
